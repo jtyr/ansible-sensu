@@ -1,7 +1,7 @@
 ---
 
-# YUM repo URL (change "el/6" to "$releasever" once there is repo for "el/7")
-sensu_yum_repo_url: http://repos.sensuapp.org/yum/el/6/$basearch/
+# YUM repo URL
+sensu_yum_repo_url: "http://repositories.sensuapp.org/yum/{{ ansible_distribution_major_version }}/$basearch/"
 
 # Package to be installed (you can force a specific version here)
 sensu_pkg: sensu
