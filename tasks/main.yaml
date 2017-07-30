@@ -9,10 +9,13 @@
 - include: common.yaml
 
 - include: server.yaml
-  when: sensu_install_server
+  when: >
+    sensu_install_server == true
 
 - include: api.yaml
-  when: sensu_install_api
+  when: >
+    sensu_install_api == true
 
 - include: client.yaml
-  when: sensu_install_client
+  when: >
+    sensu_install_client == true

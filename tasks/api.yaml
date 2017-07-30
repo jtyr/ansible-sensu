@@ -4,6 +4,7 @@
   template:
     src: config.json.j2
     dest: /etc/sensu/config_api.json
+  register: sensu_api_config_result
   notify:
     - Restart sensu-api {{ sensu_from }}
   tags:
@@ -25,13 +26,15 @@
     name: sensu-api
     enabled: yes
   tags:
-    - sensu_config
+    - sensu_service
 
 - name: Make sure sensu-api is started
   service:
     name: sensu-api
     state: started
-  register: sensu_service_api_started
+  when: >
+    sensu_api_config_result is not defined or
+    not sensu_api_config_result.changed
+  register: sensu_api_service_started
   tags:
-    - sensu_pkg
-    - sensu_config
+    - sensu_service

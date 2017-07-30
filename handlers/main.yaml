@@ -4,16 +4,22 @@
   service:
     name: sensu-server
     state: restarted
-  when: not sensu_service_server_started.changed
+  when: >
+    sensu_server_service_started is not defined or
+    not sensu_server_service_started.changed
 
 - name: Restart sensu-api {{ sensu_from }}
   service:
     name: sensu-api
     state: restarted
-  when: not sensu_service_api_started.changed
+  when: >
+    sensu_api_service_started is not defined or
+    not sensu_api_service_started.changed
 
 - name: Restart sensu-client {{ sensu_from }}
   service:
     name: sensu-client
     state: restarted
-  when: not sensu_service_client_started.changed
+  when: >
+    sensu_client_service_started is not defined or
+    not sensu_client_service_started.changed

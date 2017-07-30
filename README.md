@@ -3,7 +3,7 @@ sensu
 
 Ansible role to install and configure Sensu and Uchiwa dashboard.
 
-The configuraton of the role is done in such way that it should not be necessary
+The configuration of the role is done in such way that it should not be necessary
 to change the role for any kind of configuration. All can be done either by
 changing role parameters or by declaring completely new configuration as a
 variable. That makes this role absolutely universal. See the examples below for
@@ -12,8 +12,8 @@ more details.
 Please report any issues or send PR.
 
 
-Example
--------
+Examples
+--------
 
 ```
 ---
@@ -25,8 +25,8 @@ Example
     - redis
     - uchiwa
     - role: sensu
-      sensu_install_server: true
-      sensu_install_api: true
+      sensu_install_server: yes
+      sensu_install_api: yes
 
 # Client installation
 - hosts: my_client1
@@ -47,14 +47,17 @@ Role variables
 List of variables used by the role:
 
 ```
-# YUM repo URL (change "el/6" to "$releasever" once there is repo for "el/7")
-sensu_yum_repo_url: http://repos.sensuapp.org/yum/el/6/$basearch/
+# YUM repo URL
+sensu_yumrepo_url: http://repos.sensuapp.org/yum/el/$releasever/$basearch/
+
+# Custom YUM repo params
+sensu_yumrepo_params: {}
 
 # Package to be installed (you can force a specific version here)
 sensu_pkg: sensu
 
-# This allows to change the name of handlers
-# (handy if the role is encapsualted and called multiple times)
+# This allows to change the name of handlers (must be passed to the role)
+# (handy if the role is used multiple times and skipped on one of the places)
 sensu_from: "(default)"
 
 # Variables for installation of client/server
@@ -62,69 +65,150 @@ sensu_install_server: false
 sensu_install_api: false
 sensu_install_client: true
 
-# Default sensu-server config variables
+
+# Default sensu-server config variables for RabbitMQ
 sensu_rabbitmq_host: localhost
 sensu_rabbitmq_port: 5671
 sensu_rabbitmq_user: sensu
 sensu_rabbitmq_password: sensu
 sensu_rabbitmq_vhost: /sensu
+
+# Default sensu-server options from RabbitMQ
+sensu_rabbitmq__default:
+  host: "{{ sensu_rabbitmq_host }}"
+  port: "{{ sensu_rabbitmq_port }}"
+  user: "{{ sensu_rabbitmq_user }}"
+  password: "{{ sensu_rabbitmq_password }}"
+  vhost: "{{ sensu_rabbitmq_vhost }}"
+
+# Custom sensu-server options from RabbitMQ
+sensu_rabbitmq__custom: {}
+
+# Default sensu-server config variables for Redis
 sensu_redis_host: localhost
 sensu_redis_port: 6379
-sensu_handlers_default_type: pipe
-sensu_handlers_default_command: " true"
 
-# Default sensu-api config variables
+# Default sensu-server options from Redis
+sensu_redis__default:
+  host: "{{ sensu_redis_host }}"
+  port: "{{ sensu_redis_port }}"
+
+# Custom sensu-server options from Redis
+sensu_redis__custom: {}
+
+# Default sensu-server config variables for Sensu API
 sensu_api_host: localhost
 sensu_api_port: 4567
 
-# Default sensu-server and sensu-api config
-sensu_config:
-  rabbitmq:
-    host: "{{ sensu_rabbitmq_host }}"
-    port: "{{ sensu_rabbitmq_port }}"
-    user: "{{ sensu_rabbitmq_user }}"
-    password: "{{ sensu_rabbitmq_password }}"
-    vhost: "{{ sensu_rabbitmq_vhost }}"
-  redis:
-    host: "{{ sensu_redis_host }}"
-    port: "{{ sensu_redis_port }}"
-  api:
-    host: "{{ sensu_api_host }}"
-    port: "{{ sensu_api_port }}"
-  handlers:
-    default:
-      type: "{{ sensu_handlers_default_type }}"
-      command: "{{ sensu_handlers_default_command }}"
+# Default sensu-server options from Sensu API
+sensu_api__default:
+  host: "{{ sensu_api_host }}"
+  port: "{{ sensu_api_port }}"
 
-# Default sensu-client config variables
+# Custom sensu-server options from Sensu API
+sensu_api__custom: {}
+
+# Default sensu-server config variables for Sensu Handlers
+sensu_handlers_default_type: pipe
+sensu_handlers_default_command: " true"
+
+# Default sensu-server options from Sensu Handlers
+sensu_handlers__default:
+  default:
+    type: "{{ sensu_handlers_default_type }}"
+    command: "{{ sensu_handlers_default_command }}"
+
+# Custom sensu-server options from Sensu Handlers
+sensu_handlers__custom: {}
+
+# Default sensu-server config
+sensu_config__default:
+  rabbitmq: "{{
+    sensu_rabbitmq__default.update(sensu_rabbitmq__custom) }}{{
+    sensu_rabbitmq__default }}"
+  redis: "{{
+    sensu_redis__default.update(sensu_redis__custom) }}{{
+    sensu_redis__default }}"
+  api: "{{
+    sensu_api__default.update(sensu_api__custom) }}{{
+    sensu_api__default }}"
+  handlers: "{{
+    sensu_handlers__default.update(sensu_handlers__custom) }}{{
+    sensu_handlers__default }}"
+
+# Custom sensu-server config
+sensu_config__custom: {}
+
+# Final sensu-server config
+sensu_config: "{{
+  sensu_config__default.update(sensu_config__custom) }}{{
+  sensu_config__default }}"
+
+
+# Default sensu-client client config values
 sensu_client_name: "{{ ansible_hostname }}"
 sensu_client_address: "{{ ansible_default_ipv4.address }}"
 sensu_client_subscriptions:
   - test
 
-# Default client config
-sensu_client_config:
-  client:
-    name: "{{ sensu_client_name }}"
-    address: "{{ sensu_client_address }}"
-    subscriptions: "{{ sensu_client_subscriptions }}"
+# Default sensu-client client config options
+sensu_client_client__default:
+  name: "{{ sensu_client_name }}"
+  address: "{{ sensu_client_address }}"
+  subscriptions: "{{ sensu_client_subscriptions }}"
 
-# Default RabbitMQ config for Sensu client
-sensu_client_rabbitmq_config:
-  rabbitmq:
-    host: "{{ sensu_rabbitmq_host }}"
-    port: "{{ sensu_rabbitmq_port }}"
-    user: "{{ sensu_rabbitmq_user }}"
-    password: "{{ sensu_rabbitmq_password }}"
-    vhost: "{{ sensu_rabbitmq_vhost }}"
+# Custom sensu-client config options
+sensu_client_client__custom: {}
+
+# Default sensu-client config options
+sensu_client__default:
+  client: "{{
+    sensu_client_client__default.update(sensu_client_client__custom) }}{{
+    sensu_client_client__default }}"
+
+# Custom sensu-client config options
+sensu_client__custom: {}
+
+# Final sensu-client config
+sensu_client_config: "{{
+  sensu_client__default.update(sensu_client__custom) }}{{
+  sensu_client__default }}"
+
+
+# Default options for the rabitmq section of the RabbitMQ config for Sensu client
+sensu_client_rabbitmq_rabbitmq__default:
+  host: "{{ sensu_rabbitmq_host }}"
+  port: "{{ sensu_rabbitmq_port }}"
+  user: "{{ sensu_rabbitmq_user }}"
+  password: "{{ sensu_rabbitmq_password }}"
+  vhost: "{{ sensu_rabbitmq_vhost }}"
+
+# Custom options for the rabitmq section of the RabbitMQ config for Sensu client
+sensu_client_rabbitmq_rabbitmq__custom: {}
+
+# Default options for the RabbitMQ config for Sensu client
+sensu_client_rabbitmq__default:
+  rabbitmq: "{{
+    sensu_client_rabbitmq_rabbitmq__default.update(sensu_client_rabbitmq_rabbitmq__custom) }}{{
+    sensu_client_rabbitmq_rabbitmq__default }}"
+
+# Custom options for the RabbitMQ config for Sensu client
+sensu_client_rabbitmq__custom: {}
+
+# Final RabbitMQ config for Sensu client
+sensu_client_rabbitmq_config: "{{
+  sensu_client_rabbitmq__default.update(sensu_client_rabbitmq__custom) }}{{
+  sensu_client_rabbitmq__default }}"
 ```
 
 
 Dependencies
 ------------
 
-* [`yumrepo`](https://github.com/picotrading/ansible-yumrepo) role
-* [Config Encoder Macros](https://github.com/picotrading/config-encoder-macros)
+- [`config_encoder_filters`](https://github.com/jtyr/ansible-config_encoder_filters)
+- [`rabbitmq`](https://github.com/jtyr/ansible-rabbitmq) role (optional)
+- [`redis`](https://github.com/jtyr/ansible-redis) role (optional)
+- [`uchiwa`](https://github.com/jtyr/ansible-uchiva) role (optional)
 
 
 License
@@ -136,4 +220,4 @@ MIT
 Author
 ------
 
-Robert Readman, Jiri Tyr
+Jiri Tyr

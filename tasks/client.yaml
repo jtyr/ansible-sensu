@@ -4,6 +4,7 @@
   template:
     src: rabbitmq.json.j2
     dest: /etc/sensu/conf.d/rabbitmq.json
+  register: sensu_client_rabbitmq_config_result
   notify:
     - Restart sensu-client {{ sensu_from }}
   tags:
@@ -13,6 +14,7 @@
   template:
     src: client.json.j2
     dest: /etc/sensu/conf.d/client.json
+  register: sensu_client_config_result
   notify:
     - Restart sensu-client {{ sensu_from }}
   tags:
@@ -23,13 +25,19 @@
     name: sensu-client
     enabled: yes
   tags:
-    - sensu_config
+    - sensu_service
 
 - name: Make sure sensu-client is started
   service:
     name: sensu-client
     state: started
-  register: sensu_service_client_started
+  when: >
+    (
+        sensu_client_rabbitmq_config_result is not defined and
+        sensu_client_config_result is not defined) or
+    (
+        not sensu_client_rabbitmq_config_result.changed and
+        not sensu_client_config_result.changed)
+  register: sensu_client_service_started
   tags:
-    - sensu_pkg
-    - sensu_config
+    - sensu_service
